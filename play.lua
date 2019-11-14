@@ -1,138 +1,128 @@
-local play = {
-    assets = {
-        score = love.graphics.newFont(20),
-        default = love.graphics.getFont(),
-        -- spawn = love.audio.newSource("spawn.wav", "static"),
-        -- died = love.audio.newSource("died.wav", "static"),
-        -- ball = love.audio.newSource("ball.wav", "static"),
-    },
-    balls = {},
-    player = {
+play = {
+    platform = {
+        -- platform properties
+        width = love.graphics.getWidth(),
+        hight = love.graphics.getHeight(),
         x = 0,
-        y = 0,
-        width = 40,
-        hight = 40,
-        speed = 300
+        y = love.graphics.getHeight() / 1.5 
     },
-    difficalty = 2,
-    sound = true,
-    map_wall_width = 20,
-    game_time_score = 0
+
+    block = {},
+    player = {
+        -- player properties
+        x = love.graphics.getWidth() / 2,
+        y = love.graphics.getHeight() / 1.5,
+        speed = 400,
+        size = 32,
+
+        -- physics behaviour
+        ground = love.graphics.getHeight() / 1.5,
+        yVelocity = 0,
+        jumpHight = -300,
+        gravity = -500,
+
+        -- player images, image options
+        img = love.graphics.newImage('purple.png'),
+        imgCrouch = love.graphics.newImage('purpleCrouch.png'),
+        -- player image, currently displayed image
+        currentImg = love.graphics.newImage('purple.png')
+    }
 }
 
-function play:toggle_sound()
-    self.sound = not self.sound
-    return self.sound
-end
-
-function play:toggle_difficalty()
-    self.difficalty = self.difficalty + 1
-    if self.difficalty > 3 then
-        self.difficalty = 1
-    end
-    return self.difficalty
-end
-
 function play:entered()
-    local window_width, window_height = love.graphics.getDimensions()
 
-    self.player.x = window_width / 2 - self.player.width / 2
-    self.player.y = window_height / 2 - self.player.hight / 2
+    self.block = {}
 
-    self.balls = {}
-
-    self.game_time_score = 0
-
-    --if self.sound then
-        --self.assets.spawn:play()
-    --end
 end
 
-function play:draw()
-    local window_width, window_height = love.graphics.getDimensions()
+function play:load()
 
-    -- draw map wall
-    love.graphics.setColor(232 / 255, 213 / 255, 183 / 255)
-    love.graphics.rectangle("fill", 0, 0, window_width, window_height)
-
-    love.graphics.setColor(14 / 255, 36 / 255, 48 / 255)
-    love.graphics.rectangle("fill", self.map_wall_width, self.map_wall_width, window_width - self.map_wall_width *2, window_height - self.map_wall_width * 2)
-
-    love.graphics.setColor(252 / 255, 58 / 255, 81 / 255)
-    love.graphics.rectangle("fill", self.player.x, self.player.y, self.player.width, self.player.hight)
-
-    love.graphics.setColor(232 / 255, 213 / 255, 183 / 255)
-    love.graphics.setFont(self.assets.score)
-    love.graphics.print("Score: " .. self.game_time_score, 50, 50)
-    love.graphics.setFont(self.assets.default)
-
-    love.graphics.setColor(232 / 255, 213 / 255, 183 / 255)
-    for k, ball in pairs(self.balls) do
-        love.graphics.circle("fill", ball.x, ball.y, ball.size)
-    end
 end
 
 function play:update(dt)
-    local window_width, window_height = love.graphics.getDimensions()
 
-    self.game_time_score = self.game_time_score + dt
-
-    -- apply player movement
-    if love.keyboard.isDown("a", "left") and self.player.x > self.map_wall_width then
-        self.player.x = self.player.x - self.player.speed * dt
-    end
-
-    if love.keyboard.isDown("w", "up") and self.player.y > self.map_wall_width then
-        self.player.y = self.player.y - self.player.speed * dt
-    end
-
-    if love.keyboard.isDown("s", "down")
-        and self.player.y < window_height - self.map_wall_width - self.player.hight then
-            self.player.y = self.player.y + self.player.speed * dt
-    end
-
-    if love.keyboard.isDown("d", "right")
-        and self.player.x < window_width - self.map_wall_width - self.player.width then
+    -- print('test')
+    -- moves player left and right
+    if love.keyboard.isDown('d', 'right') then
+        if self.player.x < love.graphics.getWidth() - self.player.img:getWidth() then
             self.player.x = self.player.x + self.player.speed * dt
+        end
+    elseif love.keyboard.isDown('a', 'left') then
+        if self.player.x > 0 then
+            self.player.x = self.player.x - self.player.speed * dt
+        end
     end
 
-    while #self.balls < (self.game_time_score / 4) * self.difficalty do
-        local ball = {
-            size = love.math.random(30, 100),
-            speed = love.math.random(50, 300),
-            x = love.math.random(0, window_width),
-            y = -50
+    -- player jumps with space and w
+    if love.keyboard.isDown('space', 'w', 'up') then
+        if self.player.yVelocity == 0 then
+            self.player.yVelocity = self.player.jumpHight
+        end
+    end
+
+    -- player crouches with left control and s
+    if love.keyboard.isDown('lctrl', 's', 'down') then
+        self.player.currentImg = self.player.imgCrouch
+        self.player.size = 16
+    else
+        self.player.currentImg = self.player.img
+        self.player.size = 32
+    end
+
+    -- player fall physics
+    if self.player.yVelocity ~= 0 then
+        self.player.y = self.player.y + self.player.yVelocity * dt
+        self.player.yVelocity = self.player.yVelocity - self.player.gravity * dt
+    end
+
+    -- player collieds with ground level
+    if self.player.y > self.player.ground then
+        self.player.yVelocity = 0
+        self.player.y = self.player.ground
+    end
+
+    -- create blocks
+    numberOfBlocks = 3
+    while #self.block < numberOfBlocks do
+        local blocks = {
+            sizex = love.math.random(40, 100),
+            sizey = love.math.random(40, 290),
+            speed = love.math.random(100 - 300),
+            x = love.graphics.getWidth() - 300,
+            y = love.graphics.getHeight() / 1.5
         }
+ --       numberOfBlocks = numberOfBlocks + 1
+        table.insert(self.block, blocks)
 
-        table.insert(self.balls, ball)
+        print('adding blocks')
 
-        --if self.sound then
-            --self.assets.ball:play()
-        --end
+        --TO DO SOUNDS
     end
 
-    for k, ball in pairs(self.balls) do
-        ball.y = ball.y + ball.speed * dt
+    -- block movement
+    -- for k, block in pairs(self.block) do
+    for k, block in pairs(self.block) do
+        self.block.x = self.block.x + self.block.speed * dt
+        --print ('move')
     end
 
-    -- clean up the balls that have left the screen
-    for i, ball in ipairs(self.balls) do
-        if ball.y > window_height + ball.size then
-            table.remove(self.balls, i)
-        end
-    end
 
-    for k, ball in pairs(self.balls) do
-        local ball_distance_to_player = (((self.player.x + self.player.width / 2) - ball.x) ^2
-        + ((self.player.y + self.player.hight / 2) - ball.y)^2)^0.5
+end
 
-        if (ball_distance_to_player - self.player.width / 2) < ball.size then
-            game.states.scoreboard:add_score(self.game_time_score)
-            --if self.sound then
-                --self.assets.died:play()
-            --end
-            game:change_state("scoreboard")
-        end
+function play:draw()
+    love.graphics.setColor(1, 1, 1)             -- sets the colour to white
+
+    -- the platform will be drawn as a white rectangele while taking in the variables declaired above
+    love.graphics.rectangle('fill', self.platform.x, self.platform.y, self.platform.width, self.platform.hight)
+
+    -- draws player with selected image
+    love.graphics.draw(self.player.currentImg, self.player.x, self.player.y, 0, 1, 1, 0, self.player.size)
+
+    -- draws block
+    love.graphics.setColor(255 / 255, 0 / 255, 0 / 255)
+    for k, blocks in pairs(self.block) do
+        love.graphics.rectangle('fill', self.block.x, self.block.y - self.block.sizey, self.block.sizex, self.block.sizey)
+        --print('drawing')
     end
 end
 
