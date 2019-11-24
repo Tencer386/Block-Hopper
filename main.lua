@@ -7,7 +7,8 @@ game =
         play = require("play"),
         scoreboard = require("scoreboard"),
         settings = require("settings")
-    }
+    },
+    debug = false
 }
 
 function game:link_event(event)

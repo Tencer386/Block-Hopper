@@ -6,7 +6,9 @@ local scoreboard = {
     },
     scoreboard_file = "scores.txt",
     score_limit = 6,
-    scores = {}
+    scores = {},
+    sound = true,
+    enterTone = love.audio.newSource("tone2.wav", "static")
   }
   
   function scoreboard:clear_scores()
@@ -58,6 +60,15 @@ local scoreboard = {
   
   function scoreboard:entered()
     self:load_scores()
+    love.audio.stop(play.playMusic)
+    if play.sound == false then
+      self.sound = false
+    end
+
+    if self.sound == true then
+        love.audio.play(menu.assets.menuMusic)
+    end
+    counter = 0
   end
   
   function scoreboard:draw()
@@ -70,18 +81,36 @@ local scoreboard = {
   
     local scoreboard_x, scoreboard_y = window_width_center - scoreboard_width_center, window_height_center - scoreboard_height_center
   
+    -- draw background assets from play state for "seemless" transition from menu to play
+        -- platform
+      love.graphics.setColor(232 / 255, 213 / 255, 183 / 255)
+      love.graphics.draw(play.platform.platformImg, play.platform.x, play.platform.y)
+            -- clouds
+      love.graphics.setColor(255, 255, 255)
+      love.graphics.draw(play.clouds.cloud1, 200, 80, 0, 0.5, 0.5, 0)
+      love.graphics.draw(play.clouds.cloud2, 600, 150, 0, 0.8, 0.8, 0)    
+      love.graphics.draw(play.clouds.cloud3, 950, 100, 0, 0.5, 0.5, 0)
+            -- blocks
+      love.graphics.setColor(129 / 255, 139 / 255, 149 / 255)
+      love.graphics.rectangle('fill', love.graphics.getWidth() - 300, love.graphics.getHeight() / 1.5, 60, -100)
+      love.graphics.rectangle('fill', love.graphics.getWidth() - 120, love.graphics.getHeight() / 1.5, 60, -120)
+      love.graphics.rectangle('fill', love.graphics.getWidth() - 200, love.graphics.getHeight() / 1.5, 60, -60)
+            --player
+      love.graphics.setColor(1, 1, 1)
+      love.graphics.draw(play.player.currentImg, 100, play.player.y - play.player.sizeY, 0, 1.5, 1.5, 0)
+
     -- Set window background
     -- love.graphics.setBackgroundColor(14, 36, 48) -- love versions prior to 0.11.0
-    love.graphics.setBackgroundColor(14 / 255, 36 / 255, 48 / 255)
+    love.graphics.setBackgroundColor(33 / 255, 84 / 255, 144 / 255)
   
     -- Draw background rectangle
     -- love.graphics.setColor(232, 213, 183) -- love version prior to 0.11.0
-    love.graphics.setColor(232 / 255, 213 / 255, 183 / 255) -- love version prior to 0.11.0
+    love.graphics.setColor(129 / 255, 139 / 255, 149 / 255) -- love version prior to 0.11.0
     love.graphics.rectangle("fill", scoreboard_x, scoreboard_y, scoreboard_width, scoreboard_height)
   
     -- Draw title text
     -- love.graphics.setColor(252, 58, 81) -- love versions prior to 0.11.0
-    love.graphics.setColor(252 / 255, 58 / 255, 81 / 255)
+    love.graphics.setColor(204 / 255, 229 / 255, 255 / 255)
     love.graphics.setFont(self.assets.title)
     love.graphics.print("Scoreboard", scoreboard_x + 40, scoreboard_y + 20)
     love.graphics.setFont(self.assets.default)
@@ -95,15 +124,27 @@ local scoreboard = {
       local score_x, score_y = scoreboard_x + 40, scoreboard_y + 50
   
       -- love.graphics.setColor(252, 58, 81) -- love versions prior to 0.11.0
-      love.graphics.setColor(252 / 255, 58 / 255, 81 / 255)
+      love.graphics.setColor(204 / 255, 229 / 255, 255 / 255)
       love.graphics.print(score, score_x, 30 * i + score_y)
     end
     love.graphics.setFont(self.assets.default)
   
   end
+
+  function scoreboard:update(dt)
+    if love.audio.getActiveSourceCount() == 0 then
+      if self.sound == true then
+          love.audio.play(menu.assets.menuMusic)
+      end
+    end
+  end
+  
   
   function scoreboard:keypressed(key)
     if key == "space" or key == "escape" then
+      if self.sound == true then
+        love.audio.play(self.enterTone)
+      end
       game:change_state("menu")
     end
   end

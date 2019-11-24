@@ -3,7 +3,3 @@ function love.conf(settings)
     settings.window.hight = 720
     settings.console = true
 end
-
---function love.conf(t)
---	t.console = true
---end
